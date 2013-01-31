@@ -53,8 +53,8 @@ module Net  #:nodoc:
     module VERSION #:nodoc:
       MAJOR = 0
       MINOR = 1
-      TINY  = 2
-      STRING = [MAJOR, MINOR, TINY, 'cv'].join('.')
+      TINY  = 1
+      STRING = [MAJOR, MINOR, TINY, 'sv1'].join('.')
     end
 
     SSP_SIGN = "NTLMSSP\0"
