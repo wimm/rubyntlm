@@ -4,7 +4,12 @@ Ruby/NTLM provides message creator and parser for the NTLM authentication.
 
 Some features:
 * Independent from non-standard Ruby libraries.
-* Supports NTLM and NTLMv2 reponses.
+* Supports NTLM and NTLMv2 responses.
+
+== Changes made by CloudVolumes
+
+* Force the domain to be target_name (not sure why this is needed - may be removed)
+* UTF8 character encoding for Ruby 1.9 when converting from UTF16
 
 == Simple Example
 

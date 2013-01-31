@@ -54,7 +54,7 @@ module Net  #:nodoc:
       MAJOR = 0
       MINOR = 1
       TINY  = 2
-      STRING = [MAJOR, MINOR, TINY].join('.')
+      STRING = [MAJOR, MINOR, TINY, 'cv'].join('.')
     end
 
     SSP_SIGN = "NTLMSSP\0"
@@ -97,11 +97,23 @@ module Net  #:nodoc:
   # module functions
     class << self
       def decode_utf16le(str)
-        Kconv.kconv(swap16(str), Kconv::ASCII, Kconv::UTF16)
+        if RUBY_VERSION < "1.9"
+          Kconv.kconv(swap16(str), Kconv::ASCII, Kconv::UTF16)
+        else
+          #str.dup.force_encoding('UTF-16LE').encode('ASCII-8BIT')
+          #str.dup.force_encoding('UTF-16LE').encode('UTF-8')
+          str.dup.force_encoding(Kconv::UTF16).encode(Kconv::UTF8)
+        end
       end
 
       def encode_utf16le(str)
-        swap16(Kconv.kconv(str, Kconv::UTF16, Kconv::ASCII))
+        if RUBY_VERSION < "1.9"
+          swap16(Kconv.kconv(str, Kconv::UTF16, Kconv::ASCII))
+        else
+          #str.dup.force_encoding('ASCII-8BIT').encode('UTF-16LE')
+          #str.dup.force_encoding('UTF-8').encode('UTF-16LE')
+          str.dup.force_encoding(Kconv::UTF8).encode(Kconv::UTF16)
+        end
       end
     
       def pack_int64le(val)
@@ -701,6 +713,7 @@ module Net  #:nodoc:
             opt[:unicode] = true
           end
 
+          domain = self.target_name
           ti = self.target_info
 
           chal = self[:challenge].serialize
@@ -718,9 +731,9 @@ module Net  #:nodoc:
           end
           
           Type3.create({
-          	:lm_response => lm_res,
-          	:ntlm_response => ntlm_res,
-          	:domain => domain,
+            :lm_response => lm_res,
+            :ntlm_response => ntlm_res,
+            :domain => domain,
             :user => usr,
             :workstation => ws,
             :flag => self.flag
