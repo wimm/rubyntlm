@@ -703,6 +703,7 @@ module Net  #:nodoc:
             usr = NTLM::decode_utf16le(usr)
             pwd = NTLM::decode_utf16le(pwd)
             ws  = NTLM::decode_utf16le(ws)
+            domain = NTLM::decode_utf16le(domain) unless domain.blank?
             opt[:unicode] = false
           end
 
@@ -710,6 +711,7 @@ module Net  #:nodoc:
             usr = NTLM::encode_utf16le(usr)
             pwd = NTLM::encode_utf16le(pwd)
             ws  = NTLM::encode_utf16le(ws)
+            domain = NTLM::encode_utf16le(domain) unless domain.blank?
             opt[:unicode] = true
           end
 
