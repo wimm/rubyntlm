@@ -22,6 +22,11 @@ class FunctionTest < Test::Unit::TestCase #:nodoc:
 	   ].pack("H*")
 	end
 
+  def test_utf16le_roundtrip
+    str = "Test string roflmao"
+    assert_equal str, Net::NTLM.decode_utf16le(Net::NTLM.encode_utf16le(str))
+  end
+
 	def test_lm_hash
 		ahash = ["ff3750bcc2b22412c2265b23734e0dac"].pack("H*")
 		assert_equal ahash, Net::NTLM::lm_hash(@passwd)

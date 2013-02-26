@@ -97,11 +97,19 @@ module Net  #:nodoc:
   # module functions
     class << self
       def decode_utf16le(str)
-        Kconv.kconv(swap16(str), Kconv::ASCII, Kconv::UTF16)
+        if str.respond_to? :encode
+          str.encode(Encoding.find("US-ASCII"), Encoding.find("UTF-16LE"))
+        else
+          Kconv.kconv(swap16(str), Kconv::ASCII, Kconv::UTF16)
+        end
       end
 
       def encode_utf16le(str)
-        swap16(Kconv.kconv(str, Kconv::UTF16, Kconv::ASCII))
+        if str.respond_to? :encode
+          str.encode(Encoding.find("UTF-16LE"), Encoding.find("US-ASCII"))
+        else
+          swap16(Kconv.kconv(str, Kconv::UTF16, Kconv::ASCII))
+        end
       end
     
       def pack_int64le(val)
