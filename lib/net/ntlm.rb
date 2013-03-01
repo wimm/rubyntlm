@@ -452,6 +452,10 @@ module Net  #:nodoc:
         @alist.inject(0){|sum, a| sum += a[1].size}
       end
 
+      def head_size
+        @alist.inject(0){|sum, a| sum += a[1].size}
+      end
+
       def [](name)
         a = @alist.assoc(name.to_s.intern)
         raise ArgumentError, "no such field: #{name}" unless a
@@ -523,7 +527,7 @@ module Net  #:nodoc:
       end
       
       def data_size
-        @active ? @value.size : 0
+        (@active && @value) ? @value.size : 0
       end
     end
     
@@ -575,8 +579,6 @@ module Net  #:nodoc:
         parse(Base64.decode64(str))
       end
       
-      alias head_size size
-
       def data_size
         security_buffers.inject(0){|sum, a| sum += a[1].data_size}
       end
