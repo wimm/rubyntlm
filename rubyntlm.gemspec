@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.summary = 'Ruby/NTLM library.'
   s.description = 'Ruby/NTLM provides message creator and parser for the NTLM authentication.'
 
-  s.author = 'Kohei Kajimoto'
+  s.authors = ['Kohei Kajimoto', 'John Cant']
   s.email = 'koheik@gmail.com'
   s.homepage = 'http://rubyforge.org/projects/rubyntlm'
   s.rubyforge_project = 'rubyntlm'
@@ -17,4 +17,8 @@ Gem::Specification.new do |s|
   s.has_rdoc = true
   s.extra_rdoc_files = %w( README )
   s.rdoc_options.concat ['--main', 'README']
+
+  s.add_development_dependency "rake"
+  s.add_development_dependency "rdoc"
 end
+ 
