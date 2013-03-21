@@ -1,10 +1,10 @@
 # Rakefile for rubyntlm    -*- ruby -*-
 # $Id: Rakefile,v 1.2 2006/10/05 01:36:52 koheik Exp $
 
-require 'rake/rdoctask'
+require 'rdoc/task'
 require 'rake/testtask'
 require 'rake/packagetask'
-require 'rake/gempackagetask'
+require 'rubygems/package_task'
 require File.join(File.dirname(__FILE__), 'lib', 'net', 'ntlm')
 
 PKG_NAME = 'rubyntlm'
@@ -25,7 +25,8 @@ end
 #   p.package_files.include("lib/net/**/*.rb", "test/**/*.rb", "examples/**/*.rb")
 # end
 
-Rake::RDocTask.new do |rd|
+#Rake::RDocTask.new do |rd|
+RDoc::Task.new do |rd|
   rd.rdoc_dir = 'doc'
   rd.title = 'Ruby/NTLM library'
   rd.main = "README"
@@ -55,12 +56,9 @@ spec = Gem::Specification.new do |s|
   s.autorequire = 'net/ntlm'
 end
 
-Rake::GemPackageTask.new(spec) do |p|
+Gem::PackageTask.new(spec) do |p|
   p.gem_spec = spec
   p.need_tar = true
   p.need_zip = true
   p.package_dir = 'build'
 end
-
-  
-  
