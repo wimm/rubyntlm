@@ -101,7 +101,11 @@ module Net  #:nodoc:
       end
 
       def encode_utf16le(str)
-        swap16(Kconv.kconv(str, Kconv::UTF16, Kconv::ASCII))
+	if str.respond_to? :encode
+	  str.encode('UTF-16LE').force_encoding('ASCII-8BIT')
+	else
+          swap16(Kconv.kconv(str, Kconv::UTF16, Kconv::ASCII))
+	end
       end
     
       def pack_int64le(val)
