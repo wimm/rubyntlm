@@ -43,8 +43,11 @@
 #++
 
 require 'base64'
-require 'openssl'
-require 'openssl/digest'
+if defined? JRUBY_VERSION
+  require 'openssl'
+else
+  require 'jruby-openssl'
+end
 require 'kconv'
 
 module Net  #:nodoc:
