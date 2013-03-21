@@ -166,7 +166,7 @@ module Net  #:nodoc:
         rescue
           raise ArgumentError
         end
-        chal = NTL::pack_int64le(chal) if chal.is_a?(Integer)
+        chal = NTLM::pack_int64le(chal) if chal.is_a?(Integer)
         keys = gen_keys hash.ljust(21, "\0")
         apply_des(chal, keys).join
       end
@@ -174,7 +174,7 @@ module Net  #:nodoc:
       def ntlm_response(arg)
         hash = arg[:ntlm_hash]
         chal = arg[:challenge]
-        chal = NTL::pack_int64le(chal) if chal.is_a?(Integer)
+        chal = NTLM::pack_int64le(chal) if chal.is_a?(Integer)
         keys = gen_keys hash.ljust(21, "\0")
         apply_des(chal, keys).join
       end
