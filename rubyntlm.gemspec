@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'rubyntlm/version'
 
 Gem::Specification.new do |gem|
-  gem.name          = 'Kohei Kajimoto'
+  gem.name          = 'rubyntlm'
   gem.version       = Rubyntlm::VERSION
   gem.authors       = ['Kohei Kajimoto']
   gem.email         = ['koheik@gmail.com']

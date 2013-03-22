@@ -147,7 +147,7 @@ module Net  #:nodoc:
 
       def ntlmv2_hash(user, password, target, opt={})
         ntlmhash = ntlm_hash(password, opt)
-        userdomain = (user + target).upcase
+        userdomain = (user.upcase + target)
         unless opt[:unicode]
           userdomain = encode_utf16le(userdomain)
         end
