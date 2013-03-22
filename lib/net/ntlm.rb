@@ -8,7 +8,7 @@
 # http://jp.rubyist.net/magazine/?0013-CodeReview
 # -------------------------------------------------------------
 # Copyright (c) 2005,2006 yrock
-# 
+#
 # This program is free software.
 # You can distribute/modify this program under the terms of the
 # Ruby License.
@@ -17,8 +17,8 @@
 # -------------------------------------------------------------
 #
 # All protocol information used to write this code stems from
-# "The NTLM Authentication Protocol" by Eric Glass. The author 
-# would thank to him for this tremendous work and making it 
+# "The NTLM Authentication Protocol" by Eric Glass. The author
+# would thank to him for this tremendous work and making it
 # available on the net.
 # http://davenport.sourceforge.net/ntlm.html
 # -------------------------------------------------------------
@@ -27,7 +27,7 @@
 # Permission to use, copy, modify, and distribute this document
 # for any purpose and without any fee is hereby granted,
 # provided that the above copyright notice and this list of
-# conditions appear in all copies. 
+# conditions appear in all copies.
 # -------------------------------------------------------------
 #
 # The author also looked Mozilla-Firefox-1.0.7 source code,
@@ -36,7 +36,7 @@
 # "http://x2a.org/websvn/filedetails.php?
 # repname=libntlm-ruby&path=%2Ftrunk%2Fntlm.rb&sc=1"
 # The latter has a minor bug in its separate_keys function.
-# The third key has to begin from the 14th character of the 
+# The third key has to begin from the 14th character of the
 # input string instead of 13th:)
 #--
 # $Id: ntlm.rb,v 1.1 2006/10/05 01:36:52 koheik Exp $
@@ -44,25 +44,17 @@
 
 require 'base64'
 require 'openssl'
-require 'openssl/digest'
 require 'kconv'
 
 module Net  #:nodoc:
   module NTLM #:nodoc:
-
-    module VERSION #:nodoc:
-      MAJOR = 0
-      MINOR = 1
-      TINY  = 2
-      STRING = [MAJOR, MINOR, TINY].join('.')
-    end
 
     SSP_SIGN = "NTLMSSP\0"
     BLOB_SIGN = 0x00000101
     LM_MAGIC = "KGS!@\#$%"
     TIME_OFFSET = 11644473600
     MAX64 = 0xffffffffffffffff
-    
+
     FLAGS = {
       :UNICODE              => 0x00000001,
       :OEM                  => 0x00000002,
@@ -85,7 +77,7 @@ module Net  #:nodoc:
       :KEY128               => 0x20000000,
       :KEY56                => 0x80000000
     }
-    
+
     FLAG_KEYS = FLAGS.keys.sort{|a, b| FLAGS[a] <=> FLAGS[b] }
 
     DEFAULT_FLAGS = {
@@ -101,13 +93,17 @@ module Net  #:nodoc:
       end
 
       def encode_utf16le(str)
-        swap16(Kconv.kconv(str, Kconv::UTF16, Kconv::ASCII))
+        if str.respond_to? :encode
+          str.encode('UTF-16LE').force_encoding('ASCII-8BIT')
+        else
+          swap16(Kconv.kconv(str, Kconv::UTF16, Kconv::ASCII))
+        end
       end
-    
+
       def pack_int64le(val)
           [val & 0x00000000ffffffff, val >> 32].pack("V2")
       end
-      
+
       def swap16(str)
         str.unpack("v*").pack("n*")
       end
@@ -119,15 +115,15 @@ module Net  #:nodoc:
         end
         ret
       end
-    
+
       def gen_keys(str)
-        split7(str).map{ |str7| 
+        split7(str).map{ |str7|
           bits = split7(str7.unpack("B*")[0]).inject('')\
             {|ret, tkn| ret += tkn + (tkn.gsub('1', '').size % 2).to_s }
           [bits].pack("B*")
         }
       end
-      
+
       def apply_des(plain, keys)
         dec = OpenSSL::Cipher::DES.new
         keys.map {|k|
@@ -135,12 +131,12 @@ module Net  #:nodoc:
           dec.encrypt.update(plain)
         }
       end
-      
+
       def lm_hash(password)
         keys = gen_keys password.upcase.ljust(14, "\0")
         apply_des(LM_MAGIC, keys).join
-      end   
-      
+      end
+
       def ntlm_hash(password, opt = {})
         pwd = password.dup
         unless opt[:unicode]
@@ -151,7 +147,7 @@ module Net  #:nodoc:
 
       def ntlmv2_hash(user, password, target, opt={})
         ntlmhash = ntlm_hash(password, opt)
-        userdomain = (user + target).upcase
+        userdomain = (user.upcase + target)
         unless opt[:unicode]
           userdomain = encode_utf16le(userdomain)
         end
@@ -166,15 +162,15 @@ module Net  #:nodoc:
         rescue
           raise ArgumentError
         end
-        chal = NTL::pack_int64le(chal) if chal.is_a?(Integer)
+        chal = NTLM::pack_int64le(chal) if chal.is_a?(Integer)
         keys = gen_keys hash.ljust(21, "\0")
         apply_des(chal, keys).join
       end
-      
+
       def ntlm_response(arg)
         hash = arg[:ntlm_hash]
         chal = arg[:challenge]
-        chal = NTL::pack_int64le(chal) if chal.is_a?(Integer)
+        chal = NTLM::pack_int64le(chal) if chal.is_a?(Integer)
         keys = gen_keys hash.ljust(21, "\0")
         apply_des(chal, keys).join
       end
@@ -188,7 +184,7 @@ module Net  #:nodoc:
           raise ArgumentError
         end
         chal = NTL::pack_int64le(chal) if chal.is_a?(Integer)
-        
+
         if opt[:client_challenge]
           cc  = opt[:client_challenge]
         else
@@ -208,15 +204,15 @@ module Net  #:nodoc:
         blob.timestamp = ts
         blob.challenge = cc
         blob.target_info = ti
-        
+
         bb = blob.serialize
         OpenSSL::HMAC.digest(OpenSSL::Digest::MD5.new, key, chal + bb) + bb
       end
-      
+
       def lmv2_response(arg, opt = {})
         key = arg[:ntlmv2_hash]
         chal = arg[:challenge]
-        
+
         chal = NTLM::pack_int64le(chal) if chal.is_a?(Integer)
 
         if opt[:client_challenge]
@@ -228,7 +224,7 @@ module Net  #:nodoc:
 
         OpenSSL::HMAC.digest(OpenSSL::Digest::MD5.new, key, chal + cc) + cc
       end
-      
+
       def ntlm2_session(arg, opt = {})
         begin
           passwd_hash = arg[:ntlm_hash]
@@ -251,7 +247,6 @@ module Net  #:nodoc:
       end
     end
 
-
     # base classes for primitives
     class Field
       attr_accessor :active, :value
@@ -260,7 +255,7 @@ module Net  #:nodoc:
         @value  = opts[:value]
         @active = opts[:active].nil? ? true : opts[:active]
       end
-      
+
       def size
         @active ? @size : 0
       end
@@ -271,7 +266,7 @@ module Net  #:nodoc:
         super(opts)
         @size = opts[:size]
       end
-      
+
       def parse(str, offset=0)
         if @active and str.size >= offset + @size
           @value = str[offset, @size]
@@ -280,7 +275,7 @@ module Net  #:nodoc:
           0
         end
       end
-      
+
       def serialize
         if @active
           @value
@@ -288,14 +283,13 @@ module Net  #:nodoc:
           ""
         end
       end
-      
+
       def value=(val)
         @value = val
         @size = @value.nil? ? 0 : @value.size
         @active = (@size > 0)
       end
     end
-
 
     class Int16LE < Field
       def initialize(opt)
@@ -310,7 +304,7 @@ module Net  #:nodoc:
           0
         end
       end
-      
+
       def serialize
         [@value].pack("v")
       end
@@ -351,7 +345,7 @@ module Net  #:nodoc:
           0
         end
       end
-      
+
       def serialize
         [@value & 0x00000000ffffffff, @value >> 32].pack("V2") if @active
       end
@@ -371,11 +365,11 @@ module Net  #:nodoc:
           c.module_eval(&block)
           c
         end
-        
+
         def string(name, opts)
           add_field(name, String, opts)
         end
-        
+
         def int16LE(name, opts)
           add_field(name, Int16LE, opts)
         end
@@ -387,7 +381,7 @@ module Net  #:nodoc:
         def int64LE(name, opts)
           add_field(name, Int64LE, opts)
         end
-        
+
         def security_buffer(name, opts)
           add_field(name, SecurityBuffer, opts)
         end
@@ -395,7 +389,7 @@ module Net  #:nodoc:
         def prototypes
           @proto
         end
-        
+
         def names
           @proto.map{|n, t, o| n}
         end
@@ -403,39 +397,39 @@ module Net  #:nodoc:
         def types
           @proto.map{|n, t, o| t}
         end
-        
+
         def opts
           @proto.map{|n, t, o| o}
         end
-        
+
         private
-        
+
         def add_field(name, type, opts)
           (@proto ||= []).push [name, type, opts]
           define_accessor name
         end
-        
+
         def define_accessor(name)
           module_eval(<<-End, __FILE__, __LINE__ + 1)
           def #{name}
             self['#{name}'].value
           end
-            
+
           def #{name}=(val)
             self['#{name}'].value = val
           end
           End
         end 
       end
-      
+
       def initialize
         @alist = self.class.prototypes.map{ |n, t, o| [n, t.new(o)] }
       end
-      
+
       def serialize
         @alist.map{|n, f| f.serialize }.join
       end
-      
+
       def parse(str, offset=0)
         @alist.inject(offset){|cur, a|  cur += a[1].parse(str, cur)}
       end
@@ -449,22 +443,21 @@ module Net  #:nodoc:
         raise ArgumentError, "no such field: #{name}" unless a
         a[1]
       end
-      
+
       def []=(name, val)
         a = @alist.assoc(name.to_s.intern)
         raise ArgumentError, "no such field: #{name}" unless a
         a[1] = val
       end
-      
+
       def enable(name)
         self[name].active = true
       end
-      
+
       def disable(name)
         self[name].active = false
       end
     end
-
 
     Blob = FieldSet.define {
       int32LE    :blob_signature,   {:value => BLOB_SIGN}
@@ -490,7 +483,7 @@ module Net  #:nodoc:
         @active = opts[:active].nil? ? true : opts[:active]
         @size = 8
       end
-      
+
       def parse(str, offset=0)
         if @active and str.size >= offset + @size
           super(str, offset)
@@ -500,25 +493,25 @@ module Net  #:nodoc:
           0
         end
       end
-      
+
       def serialize
         super if @active
       end
-      
+
       def value
         @value
       end
-      
+
       def value=(val)
         @value = val
         self.length = self.allocated = val.size
       end
-      
+
       def data_size
         @active ? @value.size : 0
       end
     end
-    
+
     class Message < FieldSet
       class << Message
         def parse(str)
@@ -536,37 +529,37 @@ module Net  #:nodoc:
           end
           t
         end
-        
+
         def decode64(str)
           parse(Base64.decode64(str))
         end
       end
-      
+
       def has_flag?(flag)
         (self[:flag].value & FLAGS[flag]) == FLAGS[flag]
       end
-      
+
       def set_flag(flag)
         self[:flag].value  |= FLAGS[flag]
       end
-      
+
       def dump_flags
         FLAG_KEYS.each{ |k| print(k, "=", flag?(k), "\n") }
       end
-      
+
       def serialize
         deflag
         super + security_buffers.map{|n, f| f.value}.join
       end
-      
+
       def encode64
         Base64.encode64(serialize).gsub(/\n/, '')
       end
-      
+
       def decode64(str)
         parse(Base64.decode64(str))
       end
-      
+
       alias head_size size
 
       def data_size
@@ -576,32 +569,31 @@ module Net  #:nodoc:
       def size
         head_size + data_size
       end
-      
 
       private
 
       def security_buffers
         @alist.find_all{|n, f| f.instance_of?(SecurityBuffer)}
       end
-      
+
       def deflag
         security_buffers.inject(head_size){|cur, a|
           a[1].offset = cur
           cur += a[1].data_size
         }
       end
-      
+
       def data_edge
         security_buffers.map{ |n, f| f.active ? f.offset : size}.min
       end
 
       # sub class definitions
-      
+
       Type0 = Message.define {
         string        :sign,      {:size => 8, :value => SSP_SIGN}
         int32LE       :type,      {:value => 0}
       }
-      
+
       Type1 = Message.define {
         string          :sign,         {:size => 8, :value => SSP_SIGN}
         int32LE         :type,         {:value => 1}
@@ -619,7 +611,7 @@ module Net  #:nodoc:
             t
           end
         end
-        
+
         def parse(str)
           super(str)
           enable(:domain) if has_flag?(:DOMAIN_SUPPLIED)
@@ -631,7 +623,7 @@ module Net  #:nodoc:
           end
         end
       end
-      
+
       Type2 = Message.define{
         string        :sign,         {:size => 8, :value => SSP_SIGN}
         int32LE       :type,      {:value => 2}
@@ -642,7 +634,7 @@ module Net  #:nodoc:
         security_buffer   :target_info,  {:value => "", :active => false}
         string        :padding,   {:size => 0, :value => "", :active => false }
       }
-      
+
       class Type2
         class << Type2
           def parse(str)
@@ -651,7 +643,7 @@ module Net  #:nodoc:
             t
           end
         end
-        
+
         def parse(str)
           super(str)
           if has_flag?(:TARGET_INFO)
@@ -664,7 +656,7 @@ module Net  #:nodoc:
             super(str)
           end
         end
-        
+
         def response(arg, opt = {})
           usr = arg[:user]
           pwd = arg[:password]
@@ -672,13 +664,13 @@ module Net  #:nodoc:
           if usr.nil? or pwd.nil?
             raise ArgumentError, "user and password have to be supplied"
           end
-          
+
           if opt[:workstation]
             ws = opt[:workstation]
           else
             ws = ""
           end
-          
+
           if opt[:client_challenge]
             cc  = opt[:client_challenge]
           else
@@ -716,19 +708,18 @@ module Net  #:nodoc:
             lm_res = NTLM::lm_response(pwd, chal)
             ntlm_res = NTLM::ntlm_response(pwd, chal)
           end
-          
+
           Type3.create({
-          	:lm_response => lm_res,
-          	:ntlm_response => ntlm_res,
-          	:domain => domain,
+            :lm_response => lm_res,
+            :ntlm_response => ntlm_res,
+            :domain => domain,
             :user => usr,
             :workstation => ws,
             :flag => self.flag
           })
         end
       end
-      
-            
+
       Type3 = Message.define{
         string          :sign,          {:size => 8, :value => SSP_SIGN}
         int32LE         :type,          {:value => 3}
@@ -740,7 +731,7 @@ module Net  #:nodoc:
         security_buffer :session_key,   {:value => "", :active => false }
         int64LE         :flag,          {:value => 0, :active => false }
       }
-      
+
       class Type3
         class << Type3
           def parse(str)
@@ -748,7 +739,7 @@ module Net  #:nodoc:
             t.parse(str)
             t
           end
-        
+
           def create(arg, opt ={})
             t = new
             t.lm_response = arg[:lm_response]
@@ -756,7 +747,7 @@ module Net  #:nodoc:
             t.domain = arg[:domain]
             t.user = arg[:user]
             t.workstation = arg[:workstation]
-            
+
             if arg[:session_key]
               t.enable(:session_key)
               t.session_key = arg[session_key]

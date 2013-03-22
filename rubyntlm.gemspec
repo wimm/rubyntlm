@@ -1,20 +1,19 @@
-require File.join(File.dirname(__FILE__), 'lib', 'net', 'ntlm')
+# -*- encoding: utf-8 -*-
+lib = File.expand_path('../lib', __FILE__)
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+require 'rubyntlm/version'
 
-Gem::Specification.new do |s|
-  s.platform = Gem::Platform::RUBY
-  s.name = 'rubyntlm'
-  s.version = Net::NTLM::VERSION::STRING
-  s.summary = 'Ruby/NTLM library.'
-  s.description = 'Ruby/NTLM provides message creator and parser for the NTLM authentication.'
+Gem::Specification.new do |gem|
+  gem.name          = 'rubyntlm'
+  gem.version       = Rubyntlm::VERSION
+  gem.authors       = ['Kohei Kajimoto']
+  gem.email         = ['koheik@gmail.com']
+  gem.description   = %q{Ruby/NTLM provides message creator and parser for the NTLM authentication.}
+  gem.summary       = %q{Ruby/NTLM library.}
+  gem.homepage      = 'http://rubyforge.org/projects/rubyntlm'
 
-  s.author = 'Kohei Kajimoto'
-  s.email = 'koheik@gmail.com'
-  s.homepage = 'http://rubyforge.org/projects/rubyntlm'
-  s.rubyforge_project = 'rubyntlm'
-
-  s.files = Dir['Rakefile', 'README', 'lib/**/*', 'examples/**/*', 'test/**/*']
-
-  s.has_rdoc = true
-  s.extra_rdoc_files = %w( README )
-  s.rdoc_options.concat ['--main', 'README']
+  gem.files         = `git ls-files`.split($/)
+  gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
+  gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
+  gem.require_paths = ['lib']
 end
