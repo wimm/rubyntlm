@@ -53,8 +53,8 @@ module Net  #:nodoc:
     module VERSION #:nodoc:
       MAJOR = 0
       MINOR = 1
-      TINY  = 2
-      STRING = [MAJOR, MINOR, TINY].join('.')
+      TINY  = 3
+      STRING = [MAJOR, MINOR, TINY, 'cv'].join('.')
     end
 
     SSP_SIGN = "NTLMSSP\0"
@@ -97,17 +97,29 @@ module Net  #:nodoc:
   # module functions
     class << self
       def decode_utf16le(str)
-        Kconv.kconv(swap16(str), Kconv::ASCII, Kconv::UTF16)
+        if RUBY_VERSION < "1.9"
+          Kconv.kconv(swap16(str), Kconv::ASCII, Kconv::UTF16)
+        else
+          #str.dup.force_encoding('UTF-16LE').encode('ASCII-8BIT')
+          #str.dup.force_encoding('UTF-16LE').encode('UTF-8')
+          str.dup.force_encoding('UTF-16LE').encode('UTF-8')
+        end
       end
 
       def encode_utf16le(str)
-        swap16(Kconv.kconv(str, Kconv::UTF16, Kconv::ASCII))
+        if RUBY_VERSION < "1.9"
+          swap16(Kconv.kconv(str, Kconv::UTF16, Kconv::ASCII))
+        else
+          #str.dup.force_encoding('ASCII-8BIT').encode('UTF-16LE')
+          #str.dup.force_encoding('UTF-8').encode('UTF-16LE')
+          str.dup.encode('UTF-8').encode('UTF-16LE').force_encoding('ASCII-8BIT')
+        end
       end
     
       def pack_int64le(val)
           [val & 0x00000000ffffffff, val >> 32].pack("V2")
       end
-      
+
       def swap16(str)
         str.unpack("v*").pack("n*")
       end
@@ -127,7 +139,7 @@ module Net  #:nodoc:
           [bits].pack("B*")
         }
       end
-      
+
       def apply_des(plain, keys)
         dec = OpenSSL::Cipher::DES.new
         keys.map {|k|
@@ -691,6 +703,7 @@ module Net  #:nodoc:
             usr = NTLM::decode_utf16le(usr)
             pwd = NTLM::decode_utf16le(pwd)
             ws  = NTLM::decode_utf16le(ws)
+            domain = NTLM::decode_utf16le(domain) unless domain.blank?
             opt[:unicode] = false
           end
 
@@ -698,9 +711,11 @@ module Net  #:nodoc:
             usr = NTLM::encode_utf16le(usr)
             pwd = NTLM::encode_utf16le(pwd)
             ws  = NTLM::encode_utf16le(ws)
+            domain = NTLM::encode_utf16le(domain) unless domain.blank?
             opt[:unicode] = true
           end
 
+          domain = self.target_name if domain.blank?
           ti = self.target_info
 
           chal = self[:challenge].serialize
@@ -718,9 +733,9 @@ module Net  #:nodoc:
           end
           
           Type3.create({
-          	:lm_response => lm_res,
-          	:ntlm_response => ntlm_res,
-          	:domain => domain,
+            :lm_response => lm_res,
+            :ntlm_response => ntlm_res,
+            :domain => domain,
             :user => usr,
             :workstation => ws,
             :flag => self.flag
